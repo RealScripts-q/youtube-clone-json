@@ -80,6 +80,12 @@
       width: 100%;
       cursor: pointer;
     }
+    .video-type-heading {
+      font-size: 20px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -121,7 +127,13 @@
       <button onclick="uploadVideo()">Upload</button>
     </div>
 
-    <div id="videoContainer" class="video-grid"></div>
+    <div id="videoContainer">
+      <div class="video-type-heading">Videos</div>
+      <div id="videoGrid" class="video-grid"></div>
+
+      <div class="video-type-heading">Shorts</div>
+      <div id="shortGrid" class="video-grid"></div>
+    </div>
   </div>
 
   <script>
@@ -131,22 +143,29 @@
       const file = document.getElementById('videoFile').files[0];
       const title = document.getElementById('videoTitle').value;
       const description = document.getElementById('videoDesc').value;
-      const type = document.getElementById('videoType').value; // Get the video type (regular or short)
 
       if (!file || !title || !description) return alert('Please fill out all fields.');
 
-      // Convert the video file to a data URL
-      const reader = new FileReader();
-      reader.onload = function(e) {
+      const videoElement = document.createElement('video');
+      const videoUrl = URL.createObjectURL(file);
+
+      videoElement.onloadedmetadata = function () {
+        const width = videoElement.videoWidth;
+        const height = videoElement.videoHeight;
+
+        // Determine if the video is a Short based on resolution
+        const isShort = (width === 1080 && height === 1920);
+
+        // Create a new video object
         const newVideo = {
           "videoid": 'vid_' + Date.now(),
           "title": title,
           "description": description,
-          "mp4": e.target.result, // Store video data as base64
+          "mp4": videoUrl, // Store the video URL temporarily
           "dateuploaded": new Date().toLocaleString(),
           "views": 0,
           "channel": "You",
-          "type": type // Store the type of the video (short or regular)
+          "type": isShort ? "short" : "regular" // Classify as short or regular based on resolution
         };
 
         // Push the new video into the videos array
@@ -161,26 +180,34 @@
         // Hide the upload form
         document.getElementById('uploadForm').style.display = 'none';
       };
-      reader.readAsDataURL(file); // Read the file as base64
+
+      videoElement.src = videoUrl; // Set the video source to trigger metadata load
     }
 
     function displayVideos() {
-      const container = document.getElementById('videoContainer');
-      container.innerHTML = ''; // Clear the container first
+      const videoContainer = document.getElementById('videoGrid');
+      const shortContainer = document.getElementById('shortGrid');
+      
+      videoContainer.innerHTML = ''; // Clear the video container
+      shortContainer.innerHTML = ''; // Clear the shorts container
 
-      // Loop through all the videos and display them
+      // Loop through all the videos and display them based on type
       videos.forEach((v, index) => {
-        // If the video is a "Short", style it differently
-        const videoTypeClass = v.type === 'short' ? 'video-short' : '';
-
-        container.innerHTML += `
-          <div class="video-card ${videoTypeClass}">
+        const videoElement = `
+          <div class="video-card">
             <video onclick="viewVideo(${index})" src="${v.mp4}" controls></video>
             <h4>${v.title}</h4>
             <p>${v.channel} • ${v.views} views • ${v.dateuploaded}</p>
             <p>${v.description}</p>
           </div>
         `;
+
+        // Append to the correct container based on video type
+        if (v.type === 'regular') {
+          videoContainer.innerHTML += videoElement;
+        } else {
+          shortContainer.innerHTML += videoElement;
+        }
       });
     }
 
