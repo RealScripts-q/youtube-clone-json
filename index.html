@@ -60,7 +60,7 @@
     .video-upload {
       padding: 10px;
     }
-    .video-upload input, .video-upload textarea {
+    .video-upload input, .video-upload textarea, .video-upload select {
       display: block;
       margin-bottom: 10px;
       width: 100%;
@@ -113,6 +113,11 @@
       <input type="file" id="videoFile" accept="video/*" />
       <input type="text" id="videoTitle" placeholder="Video Title" />
       <textarea id="videoDesc" placeholder="Video Description"></textarea>
+      <label for="videoType">Video Type:</label>
+      <select id="videoType">
+        <option value="regular">Regular Video</option>
+        <option value="short">Short</option>
+      </select>
       <button onclick="uploadVideo()">Upload</button>
     </div>
 
@@ -126,6 +131,7 @@
       const file = document.getElementById('videoFile').files[0];
       const title = document.getElementById('videoTitle').value;
       const description = document.getElementById('videoDesc').value;
+      const type = document.getElementById('videoType').value; // Get the video type (regular or short)
 
       if (!file || !title || !description) return alert('Please fill out all fields.');
 
@@ -139,7 +145,8 @@
           "mp4": e.target.result, // Store video data as base64
           "dateuploaded": new Date().toLocaleString(),
           "views": 0,
-          "channel": "You"
+          "channel": "You",
+          "type": type // Store the type of the video (short or regular)
         };
 
         // Push the new video into the videos array
@@ -163,8 +170,11 @@
 
       // Loop through all the videos and display them
       videos.forEach((v, index) => {
+        // If the video is a "Short", style it differently
+        const videoTypeClass = v.type === 'short' ? 'video-short' : '';
+
         container.innerHTML += `
-          <div class="video-card">
+          <div class="video-card ${videoTypeClass}">
             <video onclick="viewVideo(${index})" src="${v.mp4}" controls></video>
             <h4>${v.title}</h4>
             <p>${v.channel} • ${v.views} views • ${v.dateuploaded}</p>
