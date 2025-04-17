@@ -128,6 +128,8 @@
     let viewedVideos = JSON.parse(localStorage.getItem("viewedVideos") || "[]");
     let likes = JSON.parse(localStorage.getItem("likes") || "{}");
     let dislikes = JSON.parse(localStorage.getItem("dislikes") || "{}");
+    let userLikes = JSON.parse(localStorage.getItem("userLikes") || "{}");
+    let userDislikes = JSON.parse(localStorage.getItem("userDislikes") || "{}");
 
     function switchView(view) {
       document.getElementById("uploadSection").style.display = (view === "upload") ? "block" : "none";
@@ -217,14 +219,32 @@
     }
 
     function likeVideo(id) {
+      if (userDislikes[id]) {
+        dislikes[id] = (dislikes[id] || 0) - 1;
+        userDislikes[id] = false;
+      }
       likes[id] = (likes[id] || 0) + 1;
+      userLikes[id] = true;
+      
       localStorage.setItem("likes", JSON.stringify(likes));
+      localStorage.setItem("dislikes", JSON.stringify(dislikes));
+      localStorage.setItem("userLikes", JSON.stringify(userLikes));
+      localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
       displayVideos();
     }
 
     function dislikeVideo(id) {
+      if (userLikes[id]) {
+        likes[id] = (likes[id] || 0) - 1;
+        userLikes[id] = false;
+      }
       dislikes[id] = (dislikes[id] || 0) + 1;
+      userDislikes[id] = true;
+
+      localStorage.setItem("likes", JSON.stringify(likes));
       localStorage.setItem("dislikes", JSON.stringify(dislikes));
+      localStorage.setItem("userLikes", JSON.stringify(userLikes));
+      localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
       displayVideos();
     }
 
