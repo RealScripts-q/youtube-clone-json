@@ -5,91 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YouTube Clone</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-    }
-    .topbar {
-      background: #f2f2f2;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-    }
-    .topbar h1 {
-      margin: 0;
-    }
-    .button-container {
-      display: flex;
-      gap: 10px;
-      padding: 10px;
-    }
-    .button-container button {
-      padding: 10px 15px;
-      cursor: pointer;
-    }
-    .upload-section {
-      display: none;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-    }
-    .upload-section input, .upload-section textarea {
-      display: block;
-      margin-bottom: 10px;
-      width: 100%;
-      padding: 8px;
-    }
-    .video-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 10px;
-      padding: 10px;
-    }
-    .video-card {
-      border: 1px solid #ccc;
-      padding: 10px;
-    }
-    .video-card video {
-      width: 100%;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { display: flex; min-height: 100vh; }
+    .sidebar { width: 240px; background: #f1f1f1; padding: 15px; overflow-y: auto; }
+    .sidebar h3, .sidebar ul { margin-bottom: 10px; }
+    .sidebar ul { list-style: none; }
+    .sidebar li { padding: 8px; cursor: pointer; }
+    .sidebar li:hover { background: #ddd; }
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fff; border-bottom: 1px solid #ddd; }
+    .search input { width: 300px; padding: 6px; }
+    .upload-form, .comment-box { margin: 15px; display: none; }
+    .upload-form input, .upload-form textarea { display: block; margin-bottom: 10px; width: 100%; padding: 6px; }
+    .section-buttons { display: flex; justify-content: center; margin-top: 15px; gap: 10px; }
+    .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; padding: 15px; }
+    .video-card { border: 1px solid #ccc; padding: 10px; background: #fff; }
+    .video-card video, .video-card img { width: 100%; cursor: pointer; }
+    .video-actions { display: flex; justify-content: space-between; margin-top: 5px; font-size: 14px; }
+    .video-meta { font-size: 13px; color: #555; margin: 5px 0; }
+    .comment-box textarea { width: 100%; height: 50px; }
   </style>
 </head>
 <body>
-
-  <div class="topbar">
-    <h1>YouTube Clone</h1>
-    <button onclick="toggleUpload()">Upload Video</button>
+  <div class="sidebar">
+    <h3>Home</h3>
+    <ul>
+      <li onclick="showUpload()">Upload</li>
+      <li onclick="filterChannel('You')">Your Channel</li>
+      <li onclick="filterChannel('All')">All Channels</li>
+    </ul>
+    <h3>Explore</h3>
+    <ul>
+      <li>Trending</li>
+      <li>Music</li>
+      <li>Gaming</li>
+      <li>News</li>
+    </ul>
   </div>
+  <div class="main">
+    <div class="topbar">
+      <span><strong>YouTube Clone</strong></span>
+      <input id="searchInput" oninput="searchVideos()" placeholder="Search videos..." />
+    </div>
 
-  <div class="upload-section" id="uploadSection">
-    <input type="file" id="videoFile" accept="video/*">
-    <input type="text" id="videoTitle" placeholder="Title">
-    <textarea id="videoDesc" placeholder="Description"></textarea>
-    <button onclick="uploadVideo()">Upload</button>
+    <div class="section-buttons">
+      <button onclick="filterType('video')">Videos</button>
+      <button onclick="filterType('short')">Shorts</button>
+    </div>
+
+    <div class="upload-form" id="uploadForm">
+      <input type="file" id="videoFile" accept="video/*" />
+      <input type="text" id="videoTitle" placeholder="Video Title" />
+      <textarea id="videoDesc" placeholder="Description"></textarea>
+      <button onclick="uploadVideo()">Upload</button>
+    </div>
+
+    <div id="videoContainer" class="video-grid"></div>
   </div>
-
-  <div class="button-container" id="tabButtons">
-    <button onclick="showTab('videos')">Videos</button>
-    <button onclick="showTab('shorts')">Shorts</button>
-  </div>
-
-  <div id="videosSection" class="video-grid"></div>
-  <div id="shortsSection" class="video-grid" style="display:none;"></div>
 
   <script>
-    let videos = JSON.parse(localStorage.getItem("videos") || "[]");
+    let userId = localStorage.getItem('userId') || (function() {
+      let id = 'user_' + Math.random().toString(36).substr(2);
+      localStorage.setItem('userId', id);
+      return id;
+    })();
 
-    function toggleUpload() {
-      document.getElementById('uploadSection').style.display = 'block';
-      document.getElementById('videosSection').style.display = 'none';
-      document.getElementById('shortsSection').style.display = 'none';
-      document.getElementById('tabButtons').style.display = 'none';
-    }
+    let videos = JSON.parse(localStorage.getItem('videos') || '[]');
+    let currentFilter = { type: 'all', channel: 'All' };
 
-    function showTab(type) {
-      document.getElementById('videosSection').style.display = (type === 'videos') ? 'grid' : 'none';
-      document.getElementById('shortsSection').style.display = (type === 'shorts') ? 'grid' : 'none';
+    function showUpload() {
+      document.getElementById('uploadForm').style.display = 'block';
     }
 
     function uploadVideo() {
@@ -97,76 +82,136 @@
       const title = document.getElementById('videoTitle').value;
       const desc = document.getElementById('videoDesc').value;
 
-      if (!file || !title || !desc) {
-        alert("Please fill all fields");
-        return;
-      }
+      if (!file || !title) return alert("Fill all fields");
 
-      const videoElement = document.createElement('video');
-      const url = URL.createObjectURL(file);
-      videoElement.src = url;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const videoURL = e.target.result;
 
-      videoElement.onloadedmetadata = () => {
-        const width = videoElement.videoWidth;
-        const height = videoElement.videoHeight;
-        const aspectRatio = width / height;
+        const video = document.createElement("video");
+        video.src = videoURL;
+        video.onloadedmetadata = function () {
+          const width = video.videoWidth;
+          const height = video.videoHeight;
+          const type = (width === 1080 && height === 1920) ? 'short' : 'video';
 
-        // Check if it's a short (1080x1920 or ~9:16)
-        const isShort = (width === 1080 && height === 1920) || Math.abs(aspectRatio - 9/16) < 0.01;
+          const newVideo = {
+            videoid: 'vid_' + Date.now(),
+            title,
+            description: desc,
+            mp4: videoURL,
+            dateuploaded: new Date().toLocaleString(),
+            views: 0,
+            liked: [],
+            disliked: [],
+            comments: [],
+            channel: "You",
+            type
+          };
 
-        const videoObj = {
-          videoid: "vid_" + Date.now(),
-          title: title,
-          description: desc,
-          mp4: url,
-          dateuploaded: new Date().toLocaleString(),
-          views: 0,
-          channel: "You",
-          type: isShort ? "short" : "video"
+          videos.push(newVideo);
+          saveVideos();
+          displayVideos();
+          document.getElementById('uploadForm').style.display = 'none';
         };
-
-        videos.push(videoObj);
-        localStorage.setItem("videos", JSON.stringify(videos));
-
-        // Reset form
-        document.getElementById('videoFile').value = '';
-        document.getElementById('videoTitle').value = '';
-        document.getElementById('videoDesc').value = '';
-
-        // Display correct tab
-        document.getElementById('uploadSection').style.display = 'none';
-        document.getElementById('tabButtons').style.display = 'flex';
-        showTab(videoObj.type === 'short' ? 'shorts' : 'videos');
-        displayVideos();
       };
+      reader.readAsDataURL(file);
+    }
+
+    function saveVideos() {
+      localStorage.setItem('videos', JSON.stringify(videos));
     }
 
     function displayVideos() {
-      const videosSection = document.getElementById('videosSection');
-      const shortsSection = document.getElementById('shortsSection');
-      videosSection.innerHTML = '';
-      shortsSection.innerHTML = '';
+      const container = document.getElementById("videoContainer");
+      container.innerHTML = "";
+      const query = document.getElementById("searchInput").value.toLowerCase();
 
       videos.forEach(video => {
-        const videoCard = `
-          <div class="video-card">
-            <video src="${video.mp4}" controls></video>
-            <h3>${video.title}</h3>
-            <p>${video.description}</p>
-            <small>${video.dateuploaded} • ${video.views} views</small>
-          </div>
-        `;
-        if (video.type === 'short') {
-          shortsSection.innerHTML += videoCard;
-        } else {
-          videosSection.innerHTML += videoCard;
+        if ((currentFilter.type === 'all' || video.type === currentFilter.type) &&
+            (currentFilter.channel === 'All' || video.channel === currentFilter.channel) &&
+            (video.title.toLowerCase().includes(query) || video.description.toLowerCase().includes(query))) {
+
+          const liked = video.liked.includes(userId);
+          const disliked = video.disliked.includes(userId);
+
+          container.innerHTML += `
+            <div class="video-card">
+              <video src="${video.mp4}" onclick="playVideo('${video.videoid}')" controls muted></video>
+              <h4>${video.title}</h4>
+              <p class="video-meta">${video.channel} • ${video.views} views • ${video.dateuploaded}</p>
+              <p>${video.description}</p>
+              <div class="video-actions">
+                <span onclick="likeVideo('${video.videoid}')">👍 ${video.liked.length}</span>
+                <span onclick="dislikeVideo('${video.videoid}')">👎 ${video.disliked.length}</span>
+              </div>
+              <div class="comment-box">
+                <textarea id="comment-${video.videoid}" placeholder="Add comment..."></textarea>
+                <button onclick="addComment('${video.videoid}')">Comment</button>
+              </div>
+              <div>
+                <strong>Comments:</strong>
+                <ul>${video.comments.map(c => `<li>${c}</li>`).join("")}</ul>
+              </div>
+            </div>`;
         }
       });
     }
 
-    // Load from localStorage on start
+    function playVideo(id) {
+      const video = videos.find(v => v.videoid === id);
+      if (!video.viewed) video.viewed = [];
+      if (!video.viewed.includes(userId)) {
+        video.views++;
+        video.viewed.push(userId);
+        saveVideos();
+        displayVideos();
+      }
+    }
+
+    function likeVideo(id) {
+      const video = videos.find(v => v.videoid === id);
+      if (!video.liked.includes(userId)) {
+        video.liked.push(userId);
+        video.disliked = video.disliked.filter(uid => uid !== userId);
+        saveVideos(); displayVideos();
+      }
+    }
+
+    function dislikeVideo(id) {
+      const video = videos.find(v => v.videoid === id);
+      if (!video.disliked.includes(userId)) {
+        video.disliked.push(userId);
+        video.liked = video.liked.filter(uid => uid !== userId);
+        saveVideos(); displayVideos();
+      }
+    }
+
+    function addComment(id) {
+      const comment = document.getElementById(`comment-${id}`).value;
+      const video = videos.find(v => v.videoid === id);
+      if (comment.trim()) {
+        video.comments.push(comment);
+        saveVideos();
+        displayVideos();
+      }
+    }
+
+    function searchVideos() {
+      displayVideos();
+    }
+
+    function filterType(type) {
+      currentFilter.type = type;
+      displayVideos();
+    }
+
+    function filterChannel(channel) {
+      currentFilter.channel = channel;
+      displayVideos();
+    }
+
     displayVideos();
   </script>
-
 </body>
 </html>
