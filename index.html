@@ -12,7 +12,6 @@
       display: flex;
       height: 100vh;
     }
-
     .sidebar {
       width: 200px;
       background: #202020;
@@ -20,7 +19,6 @@
       padding-top: 20px;
       flex-shrink: 0;
     }
-
     .sidebar button {
       background: none;
       border: none;
@@ -30,29 +28,24 @@
       text-align: left;
       cursor: pointer;
     }
-
     .sidebar button:hover {
       background: #333;
     }
-
     .main {
       flex-grow: 1;
       display: flex;
       flex-direction: column;
     }
-
     .topbar {
       background: #f2f2f2;
       padding: 10px;
       border-bottom: 1px solid #ccc;
     }
-
     .upload-section {
       display: none;
       padding: 10px;
       border-bottom: 1px solid #ccc;
     }
-
     .upload-section input,
     .upload-section textarea,
     .upload-section select {
@@ -61,33 +54,27 @@
       width: 100%;
       padding: 8px;
     }
-
     .video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 10px;
       padding: 10px;
     }
-
     .video-card {
       border: 1px solid #ccc;
       padding: 10px;
       background: white;
     }
-
     .video-card img {
       width: 100%;
       cursor: pointer;
     }
-
     .hidden {
       display: none !important;
     }
-
     .buttons {
       margin-top: 5px;
     }
-
     .buttons button {
       margin-right: 10px;
     }
@@ -95,185 +82,191 @@
 </head>
 <body>
 
-  <div class="sidebar">
-    <button onclick="switchView('home')">🏠 Home</button>
-    <button onclick="switchView('videos')">🎬 Videos</button>
-    <button onclick="switchView('shorts')">📱 Shorts</button>
-    <button onclick="switchView('upload')">⬆️ Upload</button>
+<div class="sidebar">
+  <button onclick="switchView('home')">🏠 Home</button>
+  <button onclick="switchView('videos')">🎬 Videos</button>
+  <button onclick="switchView('shorts')">📱 Shorts</button>
+  <button onclick="switchView('upload')">⬆️ Upload</button>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <h2>YouTube Clone</h2>
   </div>
 
-  <div class="main">
-    <div class="topbar">
-      <h2>YouTube Clone</h2>
-    </div>
-
-    <div class="upload-section" id="uploadSection">
-      <input type="file" id="videoFile" accept="video/*">
-      <input type="file" id="thumbnailFile" accept="image/*">
-      <input type="text" id="videoTitle" placeholder="Title">
-      <textarea id="videoDesc" placeholder="Description"></textarea>
-      <select id="videoType">
-        <option value="video">🎬 Video</option>
-        <option value="short">📱 Short</option>
-      </select>
-      <button onclick="uploadVideo()">Upload Video</button>
-    </div>
-
-    <div id="homeSection" class="video-grid"></div>
-    <div id="videosSection" class="video-grid hidden"></div>
-    <div id="shortsSection" class="video-grid hidden"></div>
+  <div class="upload-section" id="uploadSection">
+    <input type="file" id="videoFile" accept="video/*">
+    <input type="file" id="thumbnailFile" accept="image/*">
+    <input type="text" id="videoTitle" placeholder="Title">
+    <textarea id="videoDesc" placeholder="Description"></textarea>
+    <select id="videoType">
+      <option value="video">🎬 Video</option>
+      <option value="short">📱 Short</option>
+    </select>
+    <button onclick="uploadVideo()">Upload Video</button>
   </div>
 
-  <script>
-    let videos = JSON.parse(localStorage.getItem("videos") || "[]");
-    let viewedVideos = JSON.parse(localStorage.getItem("viewedVideos") || "[]");
-    let likes = JSON.parse(localStorage.getItem("likes") || "{}");
-    let dislikes = JSON.parse(localStorage.getItem("dislikes") || "{}");
+  <div id="homeSection" class="video-grid"></div>
+  <div id="videosSection" class="video-grid hidden"></div>
+  <div id="shortsSection" class="video-grid hidden"></div>
+</div>
 
-    function switchView(view) {
-      document.getElementById("uploadSection").style.display = (view === "upload") ? "block" : "none";
-      document.getElementById("homeSection").classList.toggle("hidden", view !== "home");
-      document.getElementById("videosSection").classList.toggle("hidden", view !== "videos");
-      document.getElementById("shortsSection").classList.toggle("hidden", view !== "shorts");
+<script>
+  let videos = JSON.parse(localStorage.getItem("videos") || "[]");
+  let viewedVideos = JSON.parse(localStorage.getItem("viewedVideos") || "[]");
+  let likes = JSON.parse(localStorage.getItem("likes") || "{}");
+  let dislikes = JSON.parse(localStorage.getItem("dislikes") || "{}");
+  let userReactions = JSON.parse(localStorage.getItem("userReactions") || "{}");
+
+  function switchView(view) {
+    document.getElementById("uploadSection").style.display = (view === "upload") ? "block" : "none";
+    document.getElementById("homeSection").classList.toggle("hidden", view !== "home");
+    document.getElementById("videosSection").classList.toggle("hidden", view !== "videos");
+    document.getElementById("shortsSection").classList.toggle("hidden", view !== "shorts");
+  }
+
+  function uploadVideo() {
+    const file = document.getElementById('videoFile').files[0];
+    const thumbFile = document.getElementById('thumbnailFile').files[0];
+    const title = document.getElementById('videoTitle').value;
+    const desc = document.getElementById('videoDesc').value;
+    const type = document.getElementById('videoType').value;
+
+    if (!file || !title || !desc || !type) {
+      alert("Please fill out all fields and select a video.");
+      return;
     }
 
-    function uploadVideo() {
-      const file = document.getElementById('videoFile').files[0];
-      const thumbFile = document.getElementById('thumbnailFile').files[0];
-      const title = document.getElementById('videoTitle').value;
-      const desc = document.getElementById('videoDesc').value;
-      const type = document.getElementById('videoType').value;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const videoUrl = e.target.result;
+      const videoId = "vid_" + Date.now();
 
-      if (!file || !title || !desc || !type) {
-        alert("Please fill out all fields and select a video.");
-        return;
+      if (thumbFile) {
+        const thumbReader = new FileReader();
+        thumbReader.onload = function(eThumb) {
+          saveVideo(videoUrl, eThumb.result);
+        };
+        thumbReader.readAsDataURL(thumbFile);
+      } else {
+        generateThumbnail(videoUrl, function(thumbnail) {
+          saveVideo(videoUrl, thumbnail);
+        });
       }
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const videoUrl = e.target.result;
-        const videoId = "vid_" + Date.now();
+      function saveVideo(videoUrl, thumbnail) {
+        const videoObj = {
+          videoid: videoId,
+          title: title,
+          description: desc,
+          mp4: videoUrl,
+          thumbnail: thumbnail,
+          dateuploaded: new Date().toLocaleString(),
+          views: 0,
+          channel: "You",
+          type: type
+        };
 
-        // Handle thumbnail
-        if (thumbFile) {
-          const thumbReader = new FileReader();
-          thumbReader.onload = function(eThumb) {
-            saveVideo(videoUrl, eThumb.result);
-          };
-          thumbReader.readAsDataURL(thumbFile);
-        } else {
-          generateThumbnail(videoUrl, function(thumbnail) {
-            saveVideo(videoUrl, thumbnail);
-          });
-        }
-
-        function saveVideo(videoUrl, thumbnail) {
-          const videoObj = {
-            videoid: videoId,
-            title: title,
-            description: desc,
-            mp4: videoUrl,
-            thumbnail: thumbnail,
-            dateuploaded: new Date().toLocaleString(),
-            views: 0,
-            channel: "You",
-            type: type
-          };
-
-          videos.push(videoObj);
-          localStorage.setItem("videos", JSON.stringify(videos));
-
-          // Reset form
-          document.getElementById('videoFile').value = '';
-          document.getElementById('thumbnailFile').value = '';
-          document.getElementById('videoTitle').value = '';
-          document.getElementById('videoDesc').value = '';
-          document.getElementById('videoType').value = 'video';
-
-          switchView(type === "short" ? "shorts" : "videos");
-          displayVideos();
-        }
-      };
-
-      reader.readAsDataURL(file);
-    }
-
-    function generateThumbnail(videoUrl, callback) {
-      const video = document.createElement('video');
-      video.src = videoUrl;
-      video.currentTime = 1;
-      video.addEventListener('loadeddata', function () {
-        const canvas = document.createElement('canvas');
-        canvas.width = 320;
-        canvas.height = 180;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        callback(canvas.toDataURL());
-      });
-    }
-
-    function playVideo(video) {
-      if (!viewedVideos.includes(video.videoid)) {
-        video.views++;
-        viewedVideos.push(video.videoid);
+        videos.push(videoObj);
         localStorage.setItem("videos", JSON.stringify(videos));
-        localStorage.setItem("viewedVideos", JSON.stringify(viewedVideos));
+
+        document.getElementById('videoFile').value = '';
+        document.getElementById('thumbnailFile').value = '';
+        document.getElementById('videoTitle').value = '';
+        document.getElementById('videoDesc').value = '';
+        document.getElementById('videoType').value = 'video';
+
+        switchView(type === "short" ? "shorts" : "videos");
         displayVideos();
       }
+    };
 
-      const win = window.open();
-      win.document.write(`
-        <title>${video.title}</title>
-        <video src="${video.mp4}" controls autoplay style="width:100%"></video>
-        <p>${video.title}</p>
-        <p>${video.description}</p>
-        <p>${video.dateuploaded} • ${video.views} views</p>
-        <button onclick="window.opener.likeVideo('${video.videoid}');window.close()">👍 Like (${likes[video.videoid] || 0})</button>
-        <button onclick="window.opener.dislikeVideo('${video.videoid}');window.close()">👎 Dislike (${dislikes[video.videoid] || 0})</button>
-      `);
+    reader.readAsDataURL(file);
+  }
+
+  function generateThumbnail(videoUrl, callback) {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.currentTime = 1;
+    video.addEventListener('loadeddata', function () {
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 180;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL());
+    });
+  }
+
+  function playVideo(video) {
+    if (!viewedVideos.includes(video.videoid)) {
+      video.views++;
+      viewedVideos.push(video.videoid);
+      localStorage.setItem("videos", JSON.stringify(videos));
+      localStorage.setItem("viewedVideos", JSON.stringify(viewedVideos));
     }
-
-    function likeVideo(id) {
-      likes[id] = (likes[id] || 0) + 1;
-      localStorage.setItem("likes", JSON.stringify(likes));
-      displayVideos();
-    }
-
-    function dislikeVideo(id) {
-      dislikes[id] = (dislikes[id] || 0) + 1;
-      localStorage.setItem("dislikes", JSON.stringify(dislikes));
-      displayVideos();
-    }
-
-    function displayVideos() {
-      const home = document.getElementById('homeSection');
-      const vids = document.getElementById('videosSection');
-      const shorts = document.getElementById('shortsSection');
-
-      home.innerHTML = '';
-      vids.innerHTML = '';
-      shorts.innerHTML = '';
-
-      videos.forEach(video => {
-        const card = `
-          <div class="video-card">
-            <img src="${video.thumbnail}" onclick='playVideo(${JSON.stringify(video)})' />
-            <h3>${video.title}</h3>
-            <p>${video.description}</p>
-            <small>${video.dateuploaded} • ${video.views} views</small>
-            <div class="buttons">
-              <button onclick="likeVideo('${video.videoid}')">👍 ${likes[video.videoid] || 0}</button>
-              <button onclick="dislikeVideo('${video.videoid}')">👎 ${dislikes[video.videoid] || 0}</button>
-            </div>
-          </div>
-        `;
-        home.innerHTML += card;
-        if (video.type === "video") vids.innerHTML += card;
-        else shorts.innerHTML += card;
-      });
-    }
-
     displayVideos();
-    switchView("home");
-  </script>
+
+    const win = window.open();
+    win.document.write(`
+      <title>${video.title}</title>
+      <video src="${video.mp4}" controls autoplay style="width:100%"></video>
+      <p>${video.title}</p>
+      <p>${video.description}</p>
+      <p>${video.dateuploaded} • ${video.views} views</p>
+      <button onclick="window.opener.reactTo('${video.videoid}', 'like'); window.close()">👍 Like (${likes[video.videoid] || 0})</button>
+      <button onclick="window.opener.reactTo('${video.videoid}', 'dislike'); window.close()">👎 Dislike (${dislikes[video.videoid] || 0})</button>
+    `);
+  }
+
+  function reactTo(id, action) {
+    const prev = userReactions[id];
+
+    if (prev === action) return;
+
+    if (prev === "like") likes[id] = Math.max((likes[id] || 1) - 1, 0);
+    if (prev === "dislike") dislikes[id] = Math.max((dislikes[id] || 1) - 1, 0);
+
+    if (action === "like") likes[id] = (likes[id] || 0) + 1;
+    if (action === "dislike") dislikes[id] = (dislikes[id] || 0) + 1;
+
+    userReactions[id] = action;
+
+    localStorage.setItem("likes", JSON.stringify(likes));
+    localStorage.setItem("dislikes", JSON.stringify(dislikes));
+    localStorage.setItem("userReactions", JSON.stringify(userReactions));
+    displayVideos();
+  }
+
+  function displayVideos() {
+    const home = document.getElementById('homeSection');
+    const vids = document.getElementById('videosSection');
+    const shorts = document.getElementById('shortsSection');
+
+    home.innerHTML = '';
+    vids.innerHTML = '';
+    shorts.innerHTML = '';
+
+    videos.forEach(video => {
+      const card = `
+        <div class="video-card">
+          <img src="${video.thumbnail}" onclick='playVideo(${JSON.stringify(video)})' />
+          <h3>${video.title}</h3>
+          <p>${video.description}</p>
+          <small>${video.dateuploaded} • ${video.views} views</small>
+          <div class="buttons">
+            <button onclick="reactTo('${video.videoid}', 'like')">👍 ${likes[video.videoid] || 0}</button>
+            <button onclick="reactTo('${video.videoid}', 'dislike')">👎 ${dislikes[video.videoid] || 0}</button>
+          </div>
+        </div>
+      `;
+      home.innerHTML += card;
+      if (video.type === "video") vids.innerHTML += card;
+      else shorts.innerHTML += card;
+    });
+  }
+
+  displayVideos();
+  switchView("home");
+</script>
 </body>
 </html>
