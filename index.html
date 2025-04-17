@@ -152,12 +152,7 @@
           const width = videoElem.videoWidth;
           const height = videoElem.videoHeight;
           const aspectRatio = width / height;
-          const resolutionOk = width >= 640 && height >= 360;
-
-          let type = "video";
-          if (duration <= 60 && Math.abs(aspectRatio - (9 / 16)) < 0.1) {
-            type = "short";
-          }
+          const type = (duration <= 60 && aspectRatio < 1) ? "short" : "video";
 
           const thumbReader = new FileReader();
           thumbReader.onload = function(e2) {
@@ -199,21 +194,19 @@
       localStorage.setItem("videos", JSON.stringify(videos));
       displayVideos();
 
-      const isShort = video.type === "short";
-      const width = isShort ? "360px" : "100%";
-      const height = isShort ? "640px" : "auto";
-      const margin = isShort ? "100px auto" : "auto";
+      const width = video.type === "short" ? "360px" : "100%";
+      const height = video.type === "short" ? "640px" : "auto";
 
       const win = window.open("", "_blank", "width=600,height=800");
       win.document.write(`
         <title>${video.title}</title>
-        <body style="font-family:sans-serif; text-align:center">
-          <video src="${video.mp4}" controls autoplay style="width:${width}; height:${height}; display:block; margin:${margin};"></video>
-          <h2>${video.title}</h2>
-          <p>${video.description}</p>
-          <p>${video.dateuploaded} • ${video.views} views</p>
-          <button onclick="window.opener.toggleLike('${video.videoid}'); window.close()">👍 Like (${getLikes(video.videoid)})</button>
-          <button onclick="window.opener.toggleDislike('${video.videoid}'); window.close()">👎 Dislike (${getDislikes(video.videoid)})</button>
+        <body style="font-family:sans-serif">
+        <video src="${video.mp4}" controls autoplay style="width:${width}; height:${height}; display:block; margin:auto;"></video>
+        <h2>${video.title}</h2>
+        <p>${video.description}</p>
+        <p>${video.dateuploaded} • ${video.views} views</p>
+        <button onclick="window.opener.toggleLike('${video.videoid}'); window.close()">👍 Like (${getLikes(video.videoid)})</button>
+        <button onclick="window.opener.toggleDislike('${video.videoid}'); window.close()">👎 Dislike (${getDislikes(video.videoid)})</button>
         </body>
       `);
     }
