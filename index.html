@@ -109,6 +109,7 @@
 
     <div class="upload-section" id="uploadSection">
       <input type="file" id="videoFile" accept="video/*">
+      <input type="file" id="thumbnailFile" accept="image/*">
       <input type="text" id="videoTitle" placeholder="Title">
       <textarea id="videoDesc" placeholder="Description"></textarea>
       <select id="videoType">
@@ -138,6 +139,7 @@
 
     function uploadVideo() {
       const file = document.getElementById('videoFile').files[0];
+      const thumbFile = document.getElementById('thumbnailFile').files[0];
       const title = document.getElementById('videoTitle').value;
       const desc = document.getElementById('videoDesc').value;
       const type = document.getElementById('videoType').value;
@@ -152,7 +154,20 @@
         const videoUrl = e.target.result;
         const videoId = "vid_" + Date.now();
 
-        generateThumbnail(videoUrl, function(thumbnail) {
+        // Handle thumbnail
+        if (thumbFile) {
+          const thumbReader = new FileReader();
+          thumbReader.onload = function(eThumb) {
+            saveVideo(videoUrl, eThumb.result);
+          };
+          thumbReader.readAsDataURL(thumbFile);
+        } else {
+          generateThumbnail(videoUrl, function(thumbnail) {
+            saveVideo(videoUrl, thumbnail);
+          });
+        }
+
+        function saveVideo(videoUrl, thumbnail) {
           const videoObj = {
             videoid: videoId,
             title: title,
@@ -170,13 +185,14 @@
 
           // Reset form
           document.getElementById('videoFile').value = '';
+          document.getElementById('thumbnailFile').value = '';
           document.getElementById('videoTitle').value = '';
           document.getElementById('videoDesc').value = '';
           document.getElementById('videoType').value = 'video';
 
           switchView(type === "short" ? "shorts" : "videos");
           displayVideos();
-        });
+        }
       };
 
       reader.readAsDataURL(file);
