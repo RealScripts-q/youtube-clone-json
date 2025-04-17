@@ -2,23 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube Clone</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <style>
-    /* Styles as before */
-    body { margin: 0; font-family: Arial; display: flex; }
-    .sidebar { width: 240px; background: #f8f8f8; border-right: 1px solid #ccc; padding: 10px; height: 100vh; overflow-y: auto; }
-    .sidebar h3, .sidebar ul { margin-bottom: 10px; }
-    .sidebar ul { list-style: none; padding: 0; }
-    .sidebar li { padding: 8px; cursor: pointer; }
-    .sidebar li:hover { background-color: #eee; }
-    .main { flex: 1; display: flex; flex-direction: column; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fff; border-bottom: 1px solid #ccc; }
-    .video-upload { padding: 10px; }
-    .video-upload input, .video-upload textarea { display: block; margin-bottom: 10px; width: 100%; padding: 6px; }
-    .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; padding: 20px; }
-    .video-card { border: 1px solid #ddd; padding: 10px; }
-    .video-card video { width: 100%; cursor: pointer; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 240px;
+      background: #f8f8f8;
+      border-right: 1px solid #ddd;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .sidebar h3, .sidebar ul {
+      margin-bottom: 10px;
+    }
+    .sidebar ul {
+      list-style: none;
+    }
+    .sidebar ul li {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .sidebar ul li:hover {
+      background: #ddd;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+    .search {
+      flex: 1;
+      margin: 0 20px;
+    }
+    .search input {
+      width: 100%;
+      padding: 6px 10px;
+    }
+    .video-upload {
+      padding: 10px;
+    }
+    .video-upload input, .video-upload textarea {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 6px;
+    }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+      padding: 20px;
+    }
+    .video-card {
+      border: 1px solid #ddd;
+      padding: 10px;
+    }
+    .video-card video {
+      width: 100%;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -35,12 +96,16 @@
       <li>Liked videos</li>
     </ul>
   </div>
-
   <div class="main">
     <div class="topbar">
-      <h2>YouTube Clone</h2>
+      <span><i class="fab fa-youtube"></i> YouTube Clone</span>
+      <div class="search">
+        <input type="text" placeholder="Search" />
+      </div>
       <div>
         <button onclick="document.getElementById('uploadForm').style.display='block'">Upload Video</button>
+        <i class="fas fa-bell"></i>
+        <i class="fas fa-user-circle"></i>
       </div>
     </div>
 
@@ -55,61 +120,42 @@
   </div>
 
   <script>
-    let videos = [];
-    let videoIdCounter = 1;
-
-    // Fetch videos from the server
-    async function fetchVideos() {
-      const res = await fetch('/store.json');
-      videos = await res.json();
-      if (videos.length) {
-        videoIdCounter = Math.max(...videos.map(v => parseInt(v.videoid.split('_')[1]))) + 1;
-      }
-      displayVideos();
-    }
-
-    // Save videos to the server
-    async function saveVideos() {
-      await fetch('/store.json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(videos)
-      });
-    }
+    let videos = JSON.parse(localStorage.getItem('videos')) || [];
 
     function uploadVideo() {
       const file = document.getElementById('videoFile').files[0];
       const title = document.getElementById('videoTitle').value;
       const description = document.getElementById('videoDesc').value;
 
-      if (!file || !title || !description) return alert("All fields are required!");
+      if (!file || !title || !description) return alert('Please fill out all fields.');
 
       const reader = new FileReader();
       reader.onload = function(e) {
         const newVideo = {
-          videoid: "vid_" + videoIdCounter++,
-          title: title,
-          description: description,
-          mp4: e.target.result,
-          dateuploaded: new Date().toLocaleString(),
-          views: 0,
-          channel: "You"
+          "videoid": 'vid_' + Date.now(),
+          "title": title,
+          "description": description,
+          "mp4": e.target.result,
+          "dateuploaded": new Date().toLocaleString(),
+          "views": 0,
+          "channel": "You"
         };
+
         videos.push(newVideo);
-        displayVideos();
         saveVideos();
+        displayVideos();
         document.getElementById('uploadForm').style.display = 'none';
-      }
+      };
       reader.readAsDataURL(file);
     }
 
     function displayVideos() {
       const container = document.getElementById('videoContainer');
       container.innerHTML = '';
-      videos.forEach((v, i) => {
+      videos.forEach((v, index) => {
         container.innerHTML += `
           <div class="video-card">
-            <video onclick="incrementView(${i})" src="${v.mp4}" controls></video>
+            <video onclick="viewVideo(${index})" src="${v.mp4}" controls></video>
             <h4>${v.title}</h4>
             <p>${v.channel} • ${v.views} views • ${v.dateuploaded}</p>
             <p>${v.description}</p>
@@ -118,20 +164,21 @@
       });
     }
 
-    function incrementView(index) {
+    function viewVideo(index) {
       const video = videos[index];
-      if (!video.viewers) {
-        video.viewers = [];
-      }
-      if (!video.viewers.includes(localStorage.getItem('userId'))) {
-        video.views += 1;
-        video.viewers.push(localStorage.getItem('userId'));
-        displayVideos();
+      if (!video.viewed) {
+        video.views++;
+        video.viewed = true;
         saveVideos();
+        displayVideos();
       }
     }
 
-    fetchVideos();
+    function saveVideos() {
+      localStorage.setItem('videos', JSON.stringify(videos));
+    }
+
+    displayVideos();
   </script>
 </body>
 </html>
