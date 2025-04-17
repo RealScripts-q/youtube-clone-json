@@ -5,69 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YouTube Clone</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      display: flex;
-    }
-    .sidebar {
-      width: 240px;
-      background: #f8f8f8;
-      border-right: 1px solid #ccc;
-      padding: 10px;
-      height: 100vh;
-      overflow-y: auto;
-    }
-    .sidebar h3, .sidebar ul {
-      margin-bottom: 10px;
-    }
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-    }
-    .sidebar li {
-      padding: 8px;
-      cursor: pointer;
-    }
-    .sidebar li:hover {
-      background-color: #eee;
-    }
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background: #fff;
-      border-bottom: 1px solid #ccc;
-    }
-    .video-upload {
-      padding: 10px;
-    }
-    .video-upload input, .video-upload textarea {
-      display: block;
-      margin-bottom: 10px;
-      width: 100%;
-      padding: 6px;
-    }
-    .video-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 15px;
-      padding: 20px;
-    }
-    .video-card {
-      border: 1px solid #ddd;
-      padding: 10px;
-    }
-    .video-card video {
-      width: 100%;
-      cursor: pointer;
-    }
+    /* Styles as before */
+    body { margin: 0; font-family: Arial; display: flex; }
+    .sidebar { width: 240px; background: #f8f8f8; border-right: 1px solid #ccc; padding: 10px; height: 100vh; overflow-y: auto; }
+    .sidebar h3, .sidebar ul { margin-bottom: 10px; }
+    .sidebar ul { list-style: none; padding: 0; }
+    .sidebar li { padding: 8px; cursor: pointer; }
+    .sidebar li:hover { background-color: #eee; }
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fff; border-bottom: 1px solid #ccc; }
+    .video-upload { padding: 10px; }
+    .video-upload input, .video-upload textarea { display: block; margin-bottom: 10px; width: 100%; padding: 6px; }
+    .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; padding: 20px; }
+    .video-card { border: 1px solid #ddd; padding: 10px; }
+    .video-card video { width: 100%; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -82,16 +33,6 @@
       <li>Your videos</li>
       <li>Watch Later</li>
       <li>Liked videos</li>
-    </ul>
-    <h3>Subscriptions</h3>
-    <ul>
-      <li>Dee</li>
-      <li>RealScripts</li>
-      <li>KNTL JBT</li>
-      <li>Anthony X Cool</li>
-      <li>shubham Sankhala</li>
-      <li>The Big Why</li>
-      <li>llxllie</li>
     </ul>
   </div>
 
@@ -117,8 +58,9 @@
     let videos = [];
     let videoIdCounter = 1;
 
+    // Fetch videos from the server
     async function fetchVideos() {
-      const res = await fetch('store.json');
+      const res = await fetch('/store.json');
       videos = await res.json();
       if (videos.length) {
         videoIdCounter = Math.max(...videos.map(v => parseInt(v.videoid.split('_')[1]))) + 1;
@@ -126,8 +68,9 @@
       displayVideos();
     }
 
+    // Save videos to the server
     async function saveVideos() {
-      await fetch('store.json', {
+      await fetch('/store.json', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(videos)
@@ -180,9 +123,9 @@
       if (!video.viewers) {
         video.viewers = [];
       }
-      if (!video.viewers.includes(userId)) {
+      if (!video.viewers.includes(localStorage.getItem('userId'))) {
         video.views += 1;
-        video.viewers.push(userId);
+        video.viewers.push(localStorage.getItem('userId'));
         displayVideos();
         saveVideos();
       }
