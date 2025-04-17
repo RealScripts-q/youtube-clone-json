@@ -129,29 +129,39 @@
 
       if (!file || !title || !description) return alert('Please fill out all fields.');
 
+      // Convert the video file to a data URL
       const reader = new FileReader();
       reader.onload = function(e) {
         const newVideo = {
           "videoid": 'vid_' + Date.now(),
           "title": title,
           "description": description,
-          "mp4": e.target.result,
+          "mp4": e.target.result, // Store video data as base64
           "dateuploaded": new Date().toLocaleString(),
           "views": 0,
           "channel": "You"
         };
 
+        // Push the new video into the videos array
         videos.push(newVideo);
+
+        // Save the updated array in localStorage
         saveVideos();
+        
+        // Display the new video on the page
         displayVideos();
+        
+        // Hide the upload form
         document.getElementById('uploadForm').style.display = 'none';
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(file); // Read the file as base64
     }
 
     function displayVideos() {
       const container = document.getElementById('videoContainer');
-      container.innerHTML = '';
+      container.innerHTML = ''; // Clear the container first
+
+      // Loop through all the videos and display them
       videos.forEach((v, index) => {
         container.innerHTML += `
           <div class="video-card">
@@ -166,19 +176,25 @@
 
     function viewVideo(index) {
       const video = videos[index];
+
+      // Increment views only once for each user
       if (!video.viewed) {
         video.views++;
         video.viewed = true;
+        
+        // Save updated views to localStorage
         saveVideos();
+        
+        // Re-render the video list
         displayVideos();
       }
     }
 
     function saveVideos() {
-      localStorage.setItem('videos', JSON.stringify(videos));
+      localStorage.setItem('videos', JSON.stringify(videos)); // Save videos array to localStorage
     }
 
-    displayVideos();
+    displayVideos(); // Initially load the videos on page load
   </script>
 </body>
 </html>
