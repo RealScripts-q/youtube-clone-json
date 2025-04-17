@@ -53,7 +53,9 @@
       border-bottom: 1px solid #ccc;
     }
 
-    .upload-section input, .upload-section textarea {
+    .upload-section input,
+    .upload-section textarea,
+    .upload-section select {
       display: block;
       margin-bottom: 10px;
       width: 100%;
@@ -100,6 +102,10 @@
       <input type="file" id="videoFile" accept="video/*">
       <input type="text" id="videoTitle" placeholder="Title">
       <textarea id="videoDesc" placeholder="Description"></textarea>
+      <select id="videoType">
+        <option value="video">🎬 Video</option>
+        <option value="short">📱 Short</option>
+      </select>
       <button onclick="uploadVideo()">Upload Video</button>
     </div>
 
@@ -122,51 +128,40 @@
       const file = document.getElementById('videoFile').files[0];
       const title = document.getElementById('videoTitle').value;
       const desc = document.getElementById('videoDesc').value;
+      const type = document.getElementById('videoType').value;
 
-      if (!file || !title || !desc) {
+      if (!file || !title || !desc || !type) {
         alert("Please fill out all fields and select a video.");
         return;
       }
 
-      const videoElement = document.createElement('video');
-      const url = URL.createObjectURL(file);
-      videoElement.src = url;
-
-      videoElement.onloadedmetadata = () => {
-        const width = videoElement.videoWidth;
-        const height = videoElement.videoHeight;
-        const aspectRatio = width / height;
-
-        const isShort = (width === 1080 && height === 1920) || Math.abs(aspectRatio - 9 / 16) < 0.01;
-        const type = isShort ? "short" : "video";
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const videoObj = {
-            videoid: "vid_" + Date.now(),
-            title: title,
-            description: desc,
-            mp4: e.target.result,
-            dateuploaded: new Date().toLocaleString(),
-            views: 0,
-            channel: "You",
-            type: type
-          };
-
-          videos.push(videoObj);
-          localStorage.setItem("videos", JSON.stringify(videos));
-
-          // Reset form
-          document.getElementById('videoFile').value = '';
-          document.getElementById('videoTitle').value = '';
-          document.getElementById('videoDesc').value = '';
-
-          switchView(type === "short" ? "shorts" : "videos");
-          displayVideos();
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const videoObj = {
+          videoid: "vid_" + Date.now(),
+          title: title,
+          description: desc,
+          mp4: e.target.result,
+          dateuploaded: new Date().toLocaleString(),
+          views: 0,
+          channel: "You",
+          type: type
         };
 
-        reader.readAsDataURL(file);
+        videos.push(videoObj);
+        localStorage.setItem("videos", JSON.stringify(videos));
+
+        // Reset form
+        document.getElementById('videoFile').value = '';
+        document.getElementById('videoTitle').value = '';
+        document.getElementById('videoDesc').value = '';
+        document.getElementById('videoType').value = 'video';
+
+        switchView(type === "short" ? "shorts" : "videos");
+        displayVideos();
       };
+
+      reader.readAsDataURL(file);
     }
 
     function displayVideos() {
