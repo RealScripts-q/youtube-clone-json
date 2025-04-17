@@ -54,8 +54,7 @@
     }
 
     .upload-section input,
-    .upload-section textarea,
-    .upload-section select {
+    .upload-section textarea {
       display: block;
       margin-bottom: 10px;
       width: 100%;
@@ -112,11 +111,7 @@
       <input type="file" id="thumbnailFile" accept="image/*">
       <input type="text" id="videoTitle" placeholder="Title">
       <textarea id="videoDesc" placeholder="Description"></textarea>
-      <select id="videoType" onchange="updateUploadButton()">
-        <option value="video">🎬 Video</option>
-        <option value="short">📱 Short</option>
-      </select>
-      <button id="uploadBtn" onclick="uploadVideo()">Upload Video</button>
+      <button onclick="uploadVideo()">Upload Video</button>
     </div>
 
     <div id="homeSection" class="video-grid"></div>
@@ -126,9 +121,7 @@
 
   <script>
     let videos = JSON.parse(localStorage.getItem("videos") || "[]");
-    let likes = JSON.parse(localStorage.getItem("likes") || "{}");
-    let dislikes = JSON.parse(localStorage.getItem("dislikes") || "{}");
-    let userActions = JSON.parse(localStorage.getItem("userActions") || "{}");
+    let userReactions = JSON.parse(localStorage.getItem("userReactions") || "{}");
 
     function switchView(view) {
       document.getElementById("uploadSection").style.display = (view === "upload") ? "block" : "none";
@@ -137,60 +130,124 @@
       document.getElementById("shortsSection").classList.toggle("hidden", view !== "shorts");
     }
 
-    function updateUploadButton() {
-      const type = document.getElementById("videoType").value;
-      document.getElementById("uploadBtn").innerText = type === "short" ? "Upload Short" : "Upload Video";
-    }
-
     function uploadVideo() {
-      const file = document.getElementById('videoFile').files[0];
-      const thumbnail = document.getElementById('thumbnailFile').files[0];
+      const videoFile = document.getElementById('videoFile').files[0];
+      const thumbnailFile = document.getElementById('thumbnailFile').files[0];
       const title = document.getElementById('videoTitle').value;
       const desc = document.getElementById('videoDesc').value;
-      const type = document.getElementById('videoType').value;
 
-      if (!file || !thumbnail || !title || !desc || !type) {
-        alert("Please fill all fields and select both video and thumbnail.");
+      if (!videoFile || !thumbnailFile || !title || !desc) {
+        alert("Please fill out all fields and select a video and thumbnail.");
         return;
       }
 
       const reader = new FileReader();
       reader.onload = function(e) {
         const videoUrl = e.target.result;
+        const videoElem = document.createElement('video');
+        videoElem.src = videoUrl;
 
-        const thumbReader = new FileReader();
-        thumbReader.onload = function(e2) {
-          const thumbnailUrl = e2.target.result;
-          const videoId = "vid_" + Date.now();
+        videoElem.onloadedmetadata = function () {
+          const duration = videoElem.duration;
+          const width = videoElem.videoWidth;
+          const height = videoElem.videoHeight;
+          const aspectRatio = width / height;
+          const resolutionOk = width >= 640 && height >= 360;
 
-          const videoObj = {
-            videoid: videoId,
-            title: title,
-            description: desc,
-            mp4: videoUrl,
-            thumbnail: thumbnailUrl,
-            dateuploaded: new Date().toLocaleString(),
-            views: 0,
-            channel: "You",
-            type: type
+          let type = "video";
+          if (duration <= 60 && Math.abs(aspectRatio - (9 / 16)) < 0.1) {
+            type = "short";
+          }
+
+          const thumbReader = new FileReader();
+          thumbReader.onload = function(e2) {
+            const thumbUrl = e2.target.result;
+
+            const videoObj = {
+              videoid: "vid_" + Date.now(),
+              title: title,
+              description: desc,
+              mp4: videoUrl,
+              thumbnail: thumbUrl,
+              dateuploaded: new Date().toLocaleString(),
+              views: 0,
+              channel: "You",
+              type: type
+            };
+
+            videos.push(videoObj);
+            localStorage.setItem("videos", JSON.stringify(videos));
+
+            document.getElementById('videoFile').value = '';
+            document.getElementById('thumbnailFile').value = '';
+            document.getElementById('videoTitle').value = '';
+            document.getElementById('videoDesc').value = '';
+
+            switchView(type === "short" ? "shorts" : "videos");
+            displayVideos();
           };
 
-          videos.push(videoObj);
-          localStorage.setItem("videos", JSON.stringify(videos));
-
-          document.getElementById('videoFile').value = '';
-          document.getElementById('thumbnailFile').value = '';
-          document.getElementById('videoTitle').value = '';
-          document.getElementById('videoDesc').value = '';
-          document.getElementById('videoType').value = 'video';
-          updateUploadButton();
-
-          switchView(type === "short" ? "shorts" : "videos");
-          displayVideos();
+          thumbReader.readAsDataURL(thumbnailFile);
         };
-        thumbReader.readAsDataURL(thumbnail);
       };
-      reader.readAsDataURL(file);
+
+      reader.readAsDataURL(videoFile);
+    }
+
+    function playVideo(video) {
+      video.views++;
+      localStorage.setItem("videos", JSON.stringify(videos));
+      displayVideos();
+
+      const isShort = video.type === "short";
+      const width = isShort ? "360px" : "100%";
+      const height = isShort ? "640px" : "auto";
+      const margin = isShort ? "100px auto" : "auto";
+
+      const win = window.open("", "_blank", "width=600,height=800");
+      win.document.write(`
+        <title>${video.title}</title>
+        <body style="font-family:sans-serif; text-align:center">
+          <video src="${video.mp4}" controls autoplay style="width:${width}; height:${height}; display:block; margin:${margin};"></video>
+          <h2>${video.title}</h2>
+          <p>${video.description}</p>
+          <p>${video.dateuploaded} • ${video.views} views</p>
+          <button onclick="window.opener.toggleLike('${video.videoid}'); window.close()">👍 Like (${getLikes(video.videoid)})</button>
+          <button onclick="window.opener.toggleDislike('${video.videoid}'); window.close()">👎 Dislike (${getDislikes(video.videoid)})</button>
+        </body>
+      `);
+    }
+
+    function getLikes(id) {
+      return userReactions[id]?.like ? 1 : 0;
+    }
+
+    function getDislikes(id) {
+      return userReactions[id]?.dislike ? 1 : 0;
+    }
+
+    function toggleLike(id) {
+      userReactions[id] = userReactions[id] || {};
+      if (userReactions[id].like) {
+        delete userReactions[id].like;
+      } else {
+        userReactions[id].like = true;
+        delete userReactions[id].dislike;
+      }
+      localStorage.setItem("userReactions", JSON.stringify(userReactions));
+      displayVideos();
+    }
+
+    function toggleDislike(id) {
+      userReactions[id] = userReactions[id] || {};
+      if (userReactions[id].dislike) {
+        delete userReactions[id].dislike;
+      } else {
+        userReactions[id].dislike = true;
+        delete userReactions[id].like;
+      }
+      localStorage.setItem("userReactions", JSON.stringify(userReactions));
+      displayVideos();
     }
 
     function displayVideos() {
@@ -210,8 +267,8 @@
             <p>${video.description}</p>
             <small>${video.dateuploaded} • ${video.views} views</small>
             <div class="buttons">
-              <button onclick="likeVideo('${video.videoid}')">👍 ${likes[video.videoid] || 0}</button>
-              <button onclick="dislikeVideo('${video.videoid}')">👎 ${dislikes[video.videoid] || 0}</button>
+              <button onclick="toggleLike('${video.videoid}')">👍 ${getLikes(video.videoid)}</button>
+              <button onclick="toggleDislike('${video.videoid}')">👎 ${getDislikes(video.videoid)}</button>
             </div>
           </div>
         `;
@@ -221,67 +278,6 @@
       });
     }
 
-    function playVideo(video) {
-      // Update view count if not viewed yet
-      if (!userActions[video.videoid]?.viewed) {
-        const vidIndex = videos.findIndex(v => v.videoid === video.videoid);
-        videos[vidIndex].views++;
-        userActions[video.videoid] = { ...userActions[video.videoid], viewed: true };
-        localStorage.setItem("videos", JSON.stringify(videos));
-        localStorage.setItem("userActions", JSON.stringify(userActions));
-        displayVideos();
-      }
-
-      const isShort = video.type === 'short';
-      const style = isShort ? 'height: 100vh; width: auto;' : 'width:100%';
-
-      const win = window.open();
-      win.document.write(`
-        <title>${video.title}</title>
-        <video src="${video.mp4}" controls autoplay style="${style}"></video>
-        <p>${video.title}</p>
-        <p>${video.description}</p>
-        <p>${video.dateuploaded} • ${video.views} views</p>
-        <button onclick="window.opener.likeVideo('${video.videoid}');window.close()">👍 Like (${likes[video.videoid] || 0})</button>
-        <button onclick="window.opener.dislikeVideo('${video.videoid}');window.close()">👎 Dislike (${dislikes[video.videoid] || 0})</button>
-      `);
-    }
-
-    function likeVideo(id) {
-      userActions[id] = userActions[id] || {};
-      if (userActions[id].liked) return;
-      likes[id] = (likes[id] || 0) + 1;
-
-      if (userActions[id].disliked) {
-        dislikes[id]--;
-        userActions[id].disliked = false;
-      }
-
-      userActions[id].liked = true;
-      localStorage.setItem("likes", JSON.stringify(likes));
-      localStorage.setItem("dislikes", JSON.stringify(dislikes));
-      localStorage.setItem("userActions", JSON.stringify(userActions));
-      displayVideos();
-    }
-
-    function dislikeVideo(id) {
-      userActions[id] = userActions[id] || {};
-      if (userActions[id].disliked) return;
-      dislikes[id] = (dislikes[id] || 0) + 1;
-
-      if (userActions[id].liked) {
-        likes[id]--;
-        userActions[id].liked = false;
-      }
-
-      userActions[id].disliked = true;
-      localStorage.setItem("likes", JSON.stringify(likes));
-      localStorage.setItem("dislikes", JSON.stringify(dislikes));
-      localStorage.setItem("userActions", JSON.stringify(userActions));
-      displayVideos();
-    }
-
-    updateUploadButton();
     displayVideos();
     switchView("home");
   </script>
