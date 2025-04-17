@@ -60,7 +60,7 @@
     .video-upload {
       padding: 10px;
     }
-    .video-upload input, .video-upload textarea, .video-upload select {
+    .video-upload input, .video-upload textarea {
       display: block;
       margin-bottom: 10px;
       width: 100%;
@@ -85,6 +85,21 @@
       margin-top: 20px;
       margin-bottom: 10px;
       color: #333;
+    }
+    .button-container {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .button-container button {
+      padding: 10px;
+      cursor: pointer;
+      background: #ddd;
+      border: 1px solid #ccc;
+      transition: background 0.3s;
+    }
+    .button-container button:hover {
+      background: #bbb;
     }
   </style>
 </head>
@@ -119,18 +134,21 @@
       <input type="file" id="videoFile" accept="video/*" />
       <input type="text" id="videoTitle" placeholder="Video Title" />
       <textarea id="videoDesc" placeholder="Video Description"></textarea>
-      <label for="videoType">Video Type:</label>
-      <select id="videoType">
-        <option value="regular">Regular Video</option>
-        <option value="short">Short</option>
-      </select>
       <button onclick="uploadVideo()">Upload</button>
     </div>
 
-    <div id="videoContainer">
+    <!-- Button to switch between Videos and Shorts -->
+    <div class="button-container">
+      <button onclick="showSection('video')">Videos</button>
+      <button onclick="showSection('short')">Shorts</button>
+    </div>
+
+    <div id="videoContainer" style="display: none;">
       <div class="video-type-heading">Videos</div>
       <div id="videoGrid" class="video-grid"></div>
+    </div>
 
+    <div id="shortContainer" style="display: block;">
       <div class="video-type-heading">Shorts</div>
       <div id="shortGrid" class="video-grid"></div>
     </div>
@@ -138,6 +156,17 @@
 
   <script>
     let videos = JSON.parse(localStorage.getItem('videos')) || [];
+
+    // Function to switch between video and short sections
+    function showSection(section) {
+      if (section === 'video') {
+        document.getElementById('videoContainer').style.display = 'block';
+        document.getElementById('shortContainer').style.display = 'none';
+      } else if (section === 'short') {
+        document.getElementById('videoContainer').style.display = 'none';
+        document.getElementById('shortContainer').style.display = 'block';
+      }
+    }
 
     function uploadVideo() {
       const file = document.getElementById('videoFile').files[0];
@@ -165,7 +194,7 @@
           "dateuploaded": new Date().toLocaleString(),
           "views": 0,
           "channel": "You",
-          "type": isShort ? "short" : "regular" // Classify as short or regular based on resolution
+          "type": isShort ? "short" : "video" // Classify as short or video based on resolution
         };
 
         // Push the new video into the videos array
@@ -203,7 +232,7 @@
         `;
 
         // Append to the correct container based on video type
-        if (v.type === 'regular') {
+        if (v.type === 'video') {
           videoContainer.innerHTML += videoElement;
         } else {
           shortContainer.innerHTML += videoElement;
