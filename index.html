@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YouTube Clone</title>
   <style>
-    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -111,6 +110,7 @@
   let viewedVideos = JSON.parse(localStorage.getItem("viewedVideos") || "[]");
   let likes = JSON.parse(localStorage.getItem("likes") || "{}");
   let dislikes = JSON.parse(localStorage.getItem("dislikes") || "{}");
+  let currentVideoType = "video";
 
   function switchView(view) {
     document.getElementById("uploadSection").style.display = (view === "upload") ? "block" : "none";
@@ -131,8 +131,8 @@
         const duration = video.duration;
         const width = video.videoWidth;
         const height = video.videoHeight;
-        const isShort = (duration <= 60 && height > width);
-        document.getElementById("uploadBtn").innerText = isShort ? "Upload Short" : "Upload Video";
+        currentVideoType = (duration <= 60 && height > width) ? "short" : "video";
+        document.getElementById("uploadBtn").innerText = currentVideoType === "short" ? "Upload Short" : "Upload Video";
       };
     };
     reader.readAsDataURL(file);
@@ -144,8 +144,8 @@
     const title = document.getElementById("videoTitle").value;
     const desc = document.getElementById("videoDesc").value;
 
-    if (!file || !title || !desc || !thumbFile) {
-      alert("Please fill out all fields and select files.");
+    if (!file || !thumbFile || !title || !desc) {
+      alert("Please fill all fields and select both video and thumbnail.");
       return;
     }
 
@@ -153,44 +153,37 @@
     reader.onload = function (e) {
       const videoUrl = e.target.result;
 
-      const video = document.createElement("video");
-      video.src = videoUrl;
-      video.onloadedmetadata = function () {
-        const duration = video.duration;
-        const width = video.videoWidth;
-        const height = video.videoHeight;
-        const type = (duration <= 60 && height > width) ? "short" : "video";
-
-        const thumbReader = new FileReader();
-        thumbReader.onload = function (event) {
-          const videoObj = {
-            videoid: "vid_" + Date.now(),
-            title,
-            description: desc,
-            mp4: videoUrl,
-            thumbnail: event.target.result,
-            dateuploaded: new Date().toLocaleString(),
-            views: 0,
-            channel: "You",
-            type
-          };
-
-          videos.push(videoObj);
-          localStorage.setItem("videos", JSON.stringify(videos));
-
-          document.getElementById("videoFile").value = '';
-          document.getElementById("thumbnailFile").value = '';
-          document.getElementById("videoTitle").value = '';
-          document.getElementById("videoDesc").value = '';
-          document.getElementById("uploadBtn").innerText = "Upload";
-
-          switchView(type === "short" ? "shorts" : "videos");
-          displayVideos();
+      const thumbReader = new FileReader();
+      thumbReader.onload = function (event) {
+        const newVideo = {
+          videoid: "vid_" + Date.now(),
+          title,
+          description: desc,
+          mp4: videoUrl,
+          thumbnail: event.target.result,
+          dateuploaded: new Date().toLocaleString(),
+          views: 0,
+          channel: "You",
+          type: currentVideoType
         };
-        thumbReader.readAsDataURL(thumbFile);
+
+        videos.push(newVideo);
+        localStorage.setItem("videos", JSON.stringify(videos));
+        document.getElementById("uploadBtn").innerText = "Upload";
+        clearForm();
+        displayVideos();
+        switchView(currentVideoType === "short" ? "shorts" : "videos");
       };
+      thumbReader.readAsDataURL(thumbFile);
     };
     reader.readAsDataURL(file);
+  }
+
+  function clearForm() {
+    document.getElementById("videoFile").value = '';
+    document.getElementById("thumbnailFile").value = '';
+    document.getElementById("videoTitle").value = '';
+    document.getElementById("videoDesc").value = '';
   }
 
   function playVideo(video) {
@@ -223,7 +216,6 @@
   }
 
   function likeVideo(id) {
-    if (dislikes[id]) dislikes[id]--;
     likes[id] = 1;
     dislikes[id] = 0;
     localStorage.setItem("likes", JSON.stringify(likes));
@@ -232,7 +224,6 @@
   }
 
   function dislikeVideo(id) {
-    if (likes[id]) likes[id]--;
     dislikes[id] = 1;
     likes[id] = 0;
     localStorage.setItem("likes", JSON.stringify(likes));
@@ -271,5 +262,6 @@
   displayVideos();
   switchView("home");
 </script>
+
 </body>
 </html>
