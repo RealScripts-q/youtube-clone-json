@@ -115,6 +115,7 @@
         <option value="video">🎬 Video</option>
         <option value="short">📱 Short</option>
       </select>
+      <input type="file" id="thumbnailFile" accept="image/*">
       <button onclick="uploadVideo()">Upload Video</button>
     </div>
 
@@ -143,6 +144,7 @@
       const title = document.getElementById('videoTitle').value;
       const desc = document.getElementById('videoDesc').value;
       const type = document.getElementById('videoType').value;
+      const thumbnailFile = document.getElementById('thumbnailFile').files[0];
 
       if (!file || !title || !desc || !type) {
         alert("Please fill out all fields and select a video.");
@@ -154,34 +156,49 @@
         const videoUrl = e.target.result;
         const videoId = "vid_" + Date.now();
 
-        generateThumbnail(videoUrl, function(thumbnail) {
-          const videoObj = {
-            videoid: videoId,
-            title: title,
-            description: desc,
-            mp4: videoUrl,
-            thumbnail: thumbnail,
-            dateuploaded: new Date().toLocaleString(),
-            views: 0,
-            channel: "You",
-            type: type
+        let thumbnail = "";
+        if (thumbnailFile) {
+          const thumbnailReader = new FileReader();
+          thumbnailReader.onload = function(thumbnailEvent) {
+            thumbnail = thumbnailEvent.target.result;
+            saveVideo(videoUrl, thumbnail, videoId, title, desc, type);
           };
-
-          videos.push(videoObj);
-          localStorage.setItem("videos", JSON.stringify(videos));
-
-          // Reset form
-          document.getElementById('videoFile').value = '';
-          document.getElementById('videoTitle').value = '';
-          document.getElementById('videoDesc').value = '';
-          document.getElementById('videoType').value = 'video';
-
-          switchView(type === "short" ? "shorts" : "videos");
-          displayVideos();
-        });
+          thumbnailReader.readAsDataURL(thumbnailFile);
+        } else {
+          generateThumbnail(videoUrl, function(defaultThumbnail) {
+            saveVideo(videoUrl, defaultThumbnail, videoId, title, desc, type);
+          });
+        }
       };
 
       reader.readAsDataURL(file);
+    }
+
+    function saveVideo(videoUrl, thumbnail, videoId, title, desc, type) {
+      const videoObj = {
+        videoid: videoId,
+        title: title,
+        description: desc,
+        mp4: videoUrl,
+        thumbnail: thumbnail,
+        dateuploaded: new Date().toLocaleString(),
+        views: 0,
+        channel: "You",
+        type: type
+      };
+
+      videos.push(videoObj);
+      localStorage.setItem("videos", JSON.stringify(videos));
+
+      // Reset form
+      document.getElementById('videoFile').value = '';
+      document.getElementById('videoTitle').value = '';
+      document.getElementById('videoDesc').value = '';
+      document.getElementById('videoType').value = 'video';
+      document.getElementById('thumbnailFile').value = '';
+
+      switchView(type === "short" ? "shorts" : "videos");
+      displayVideos();
     }
 
     function generateThumbnail(videoUrl, callback) {
@@ -219,33 +236,43 @@
     }
 
     function likeVideo(id) {
-      if (userDislikes[id]) {
+      if (!userLikes[id] && !userDislikes[id]) {
+        likes[id] = (likes[id] || 0) + 1;
+        localStorage.setItem("likes", JSON.stringify(likes));
+        userLikes[id] = true;
+        localStorage.setItem("userLikes", JSON.stringify(userLikes));
+        displayVideos();
+      } else if (userDislikes[id]) {
         dislikes[id] = (dislikes[id] || 0) - 1;
+        likes[id] = (likes[id] || 0) + 1;
+        userLikes[id] = true;
         userDislikes[id] = false;
+        localStorage.setItem("likes", JSON.stringify(likes));
+        localStorage.setItem("dislikes", JSON.stringify(dislikes));
+        localStorage.setItem("userLikes", JSON.stringify(userLikes));
+        localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
+        displayVideos();
       }
-      likes[id] = (likes[id] || 0) + 1;
-      userLikes[id] = true;
-      
-      localStorage.setItem("likes", JSON.stringify(likes));
-      localStorage.setItem("dislikes", JSON.stringify(dislikes));
-      localStorage.setItem("userLikes", JSON.stringify(userLikes));
-      localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
-      displayVideos();
     }
 
     function dislikeVideo(id) {
-      if (userLikes[id]) {
+      if (!userDislikes[id] && !userLikes[id]) {
+        dislikes[id] = (dislikes[id] || 0) + 1;
+        localStorage.setItem("dislikes", JSON.stringify(dislikes));
+        userDislikes[id] = true;
+        localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
+        displayVideos();
+      } else if (userLikes[id]) {
         likes[id] = (likes[id] || 0) - 1;
+        dislikes[id] = (dislikes[id] || 0) + 1;
         userLikes[id] = false;
+        userDislikes[id] = true;
+        localStorage.setItem("likes", JSON.stringify(likes));
+        localStorage.setItem("dislikes", JSON.stringify(dislikes));
+        localStorage.setItem("userLikes", JSON.stringify(userLikes));
+        localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
+        displayVideos();
       }
-      dislikes[id] = (dislikes[id] || 0) + 1;
-      userDislikes[id] = true;
-
-      localStorage.setItem("likes", JSON.stringify(likes));
-      localStorage.setItem("dislikes", JSON.stringify(dislikes));
-      localStorage.setItem("userLikes", JSON.stringify(userLikes));
-      localStorage.setItem("userDislikes", JSON.stringify(userDislikes));
-      displayVideos();
     }
 
     function displayVideos() {
