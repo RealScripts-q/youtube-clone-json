@@ -1,1 +1,9 @@
-[]
+{
+  "videoid": "vid_<timestamp>",
+  "title": "Video Title",
+  "description": "Video Description",
+  "mp4": "data:video/mp4;base64,...",
+  "dateuploaded": "MM/DD/YYYY, HH:mm:ss AM/PM",
+  "views": 0,
+  "channel": "You"
+}
